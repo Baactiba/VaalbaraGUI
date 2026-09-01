@@ -5,7 +5,7 @@ public class Algorithm
 
     public static void main (String[] args) {
 //        solve(8, 350, 512, 0.75, 16, 17);
-        solve(4, 18, 512, 0.0005, 3, 4, 6);
+        solve(5, 60, 512, 0.05, 4,8,9);
     }
 
     static int size;
@@ -27,8 +27,86 @@ public class Algorithm
         }
         long[] data = new long[size * (setSize - set.length)];
         long[] start = setup(maxSum, set);
-        for (long l : start)
-            System.out.println(Long.toBinaryString(l));
+        System.arraycopy(start, 0, data, 0, start.length);
+
+        int[] indices = new int[setSize - set.length];
+        int[] cumSum = new int[setSize - set.length];
+        for (int i : set)
+            cumSum[0] += i;
+        int index = 0;
+
+        System.out.println(cumSum[0]);
+
+
+        while (index > -1) {
+            int nRem = indices.length - index;
+            tAdd: for (int adding = index == 0 ? set[set.length - 1] + 1 : indices[index - 1]; adding <= (maxSum - cumSum[index]) / nRem - (nRem / 2); adding++) {
+                int ss = index * size;
+                int ss2 = index * size + size;
+                System.arraycopy(data, ss, data, ss2, size);
+
+
+
+                set(data, ss2, adding, 0b11);
+                for (int i = 2; i <= maxSum; i++) {
+                    switch (get(data, ss, i)) {
+                        case 0b01: {
+                            if (!set(data, ss2, i + adding, 0b01)) {
+                                continue tAdd;
+                            }
+                            break;
+                        }
+                        case 0b10: {
+                            long product = (long) i * adding;
+                            if (product > maxSum)
+                                if (!add(data, ss2 + storageSize, product)) {
+                                    continue tAdd;
+                                }
+                            else
+                                if (!set(data, ss2, (int) product, 0b10)) {
+                                    continue tAdd;
+                                }
+                            break;
+                        }
+                        case 0b11: {
+                            if (!set(data, ss2, i + adding, 0b01)) {
+                                continue tAdd;
+                            }
+                            long product = (long) i * adding;
+                            if (product > maxSum)
+                                if (!add(data, ss2 + storageSize, product)) {
+                                    continue tAdd;
+                                }
+                            else
+                                if (!set(data, ss2, (int) product, 0b10)) {
+                                    continue tAdd;
+                                }
+                            break;
+                        }
+                    }
+                }
+                long threshold = Long.MAX_VALUE / adding;
+                for (int i = ss + storageSize; i < ss + storageSize + hashSetSize; i++) {
+                    if (data[i] > 0 && data[i] <= threshold) {
+                        long product = data[i] * adding;
+                        if (!add(data, ss2 + storageSize, product)) {
+                            continue tAdd;
+                        }
+                    }
+                }
+
+                
+
+
+
+
+
+
+
+
+            }
+        }
+
     }
 
 
@@ -50,7 +128,6 @@ public class Algorithm
             System.arraycopy(ret, 0, ret2, 0, hashSetSize);
             set(ret2, 0, adding, 0b11);
             for (int i = 2; i <= maxSum; i++) {
-                System.out.println("At index " + i + " I have gotten " + get(ret, 0, i));
                 switch (get(ret, 0, i)) {
                     case 0b01:
                         set(ret2, 0, i + adding, 0b01);
@@ -85,7 +162,6 @@ public class Algorithm
         return ret;
     }
     static boolean add(long[] set, int offset, long l) {
-        System.out.println("Adding " + l);
         long h = l;
         h ^= h >> 33;
         h *= 0xff51afd7ed558ccdL;
@@ -106,11 +182,14 @@ public class Algorithm
     static int get(long[] arr, int offset, int position) {
         return (int) (arr[offset + (position >> 5)] >> (2 * (position & 0b11111))) & 0b11;
     }
-    static void set(long[] arr, int offset, int position, int value) {
+    static boolean set(long[] arr, int offset, int position, int value) {
+        if (((int) (arr[offset + (position >> 5)] >> (2 * (position & 0b11111))) & 0b11) != 0)
+            return false;
         int i = offset + (position >> 5);
         int shift = (position & 31) << 1;
         long mask = 0b11L << shift;
         arr[offset + i] = (arr[offset + i] & ~mask) | ((long) value << shift);
+        return true;
     }
     public static void bptlt(int n) {
         int i = 1;
