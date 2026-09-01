@@ -5,7 +5,7 @@ public class Algorithm
 
     public static void main (String[] args) {
 //        solve(8, 350, 512, 0.75, 16, 17);
-        solve(5, 60, 512, 0.05, 4,8,9);
+        solve(5, 60, 512, 0.05, 4,8);
     }
 
     static int size;
@@ -25,86 +25,103 @@ public class Algorithm
             bptlt(cache);
             size = storageSize + hashSetSize;
         }
-        long[] data = new long[size * (setSize - set.length)];
+        long[] data = new long[size * (setSize - set.length + 1)];
         long[] start = setup(maxSum, set);
         System.arraycopy(start, 0, data, 0, start.length);
 
         int[] indices = new int[setSize - set.length];
+        int[] maxes = new int[setSize - set.length];
         int[] cumSum = new int[setSize - set.length];
         for (int i : set)
             cumSum[0] += i;
         int index = 0;
 
-        System.out.println(cumSum[0]);
+        int nRem = indices.length - index;
+        indices[index] = set[set.length - 1] + 1;
+        maxes[index] = maxSum - cumSum[index] / nRem - (nRem / 2);
 
-
-        while (index > -1) {
-            int nRem = indices.length - index;
-            tAdd: for (int adding = index == 0 ? set[set.length - 1] + 1 : indices[index - 1]; adding <= (maxSum - cumSum[index]) / nRem - (nRem / 2); adding++) {
-                int ss = index * size;
-                int ss2 = index * size + size;
-                System.arraycopy(data, ss, data, ss2, size);
-
-
-
-                set(data, ss2, adding, 0b11);
-                for (int i = 2; i <= maxSum; i++) {
-                    switch (get(data, ss, i)) {
-                        case 0b01: {
-                            if (!set(data, ss2, i + adding, 0b01)) {
-                                continue tAdd;
-                            }
-                            break;
-                        }
-                        case 0b10: {
-                            long product = (long) i * adding;
-                            if (product > maxSum)
-                                if (!add(data, ss2 + storageSize, product)) {
-                                    continue tAdd;
-                                }
-                            else
-                                if (!set(data, ss2, (int) product, 0b10)) {
-                                    continue tAdd;
-                                }
-                            break;
-                        }
-                        case 0b11: {
-                            if (!set(data, ss2, i + adding, 0b01)) {
-                                continue tAdd;
-                            }
-                            long product = (long) i * adding;
-                            if (product > maxSum)
-                                if (!add(data, ss2 + storageSize, product)) {
-                                    continue tAdd;
-                                }
-                            else
-                                if (!set(data, ss2, (int) product, 0b10)) {
-                                    continue tAdd;
-                                }
-                            break;
-                        }
-                    }
-                }
-                long threshold = Long.MAX_VALUE / adding;
-                for (int i = ss + storageSize; i < ss + storageSize + hashSetSize; i++) {
-                    if (data[i] > 0 && data[i] <= threshold) {
-                        long product = data[i] * adding;
-                        if (!add(data, ss2 + storageSize, product)) {
-                            continue tAdd;
-                        }
-                    }
-                }
-
-                
-
-
-
-
-
-
-
-
+        out: while (index > -1) {
+            if (indices[index] > maxes[index]) {
+                indices[index--] = 0;
+                if (index == 0)
+                    return;
+                nRem++;
+                indices[index] = indices[index - 1] + 1;
+                maxes[index] = maxSum - cumSum[index] / nRem - (nRem / 2);
             }
+            nRem = indices.length - index;
+            int ss = index * size;
+            int ss2 = index * size + size;
+            indices[index] = index == 0 ? set[set.length - 1] + 1 : indices[index - 1];
+            maxes[index] = maxSum - cumSum[index] / nRem - (nRem / 2);
+            System.out.println(Arrays.toString(indices) + " " + index);
+            System.arraycopy(data, ss, data, ss2, size);
+
+            int adding = indices[index];
+
+            set(data, ss2, adding, 0b11);
+            for (int i = 2; i <= maxSum; i++) {
+                switch (get(data, ss, i)) {
+                    case 0b01: {
+                        if (!set(data, ss2, i + adding, 0b01)) {
+                            indices[index]++;
+                            continue out;
+                        }
+                        break;
+                    }
+                    case 0b10: {
+                        long product = (long) i * adding;
+                        if (product > maxSum)
+                            if (!add(data, ss2 + storageSize, product)) {
+                                indices[index]++;
+                                continue out;
+                            }
+                        else
+                            if (!set(data, ss2, (int) product, 0b10)) {
+                                indices[index]++;
+                                continue out;
+                            }
+                        break;
+                    }
+                    case 0b11: {
+                        if (!set(data, ss2, i + adding, 0b01)) {
+                            indices[index]++;
+                            continue out;
+                        }
+                        long product = (long) i * adding;
+                        if (product > maxSum)
+                            if (!add(data, ss2 + storageSize, product)) {
+                                indices[index]++;
+                                continue out;
+                            }
+                        else
+                            if (!set(data, ss2, (int) product, 0b10)) {
+                                indices[index]++;
+                                continue out;
+                            }
+                        break;
+                    }
+                }
+            }
+            long threshold = Long.MAX_VALUE / adding;
+            for (int i = ss + storageSize; i < ss + storageSize + hashSetSize; i++) {
+                if (data[i] > 0 && data[i] <= threshold) {
+                    long product = data[i] * adding;
+                    if (!add(data, ss2 + storageSize, product)) {
+                        indices[index]++;
+                        continue out;
+                    }
+                }
+            }
+            indices[index++] = adding;
+            try {
+                cumSum[index] = cumSum[index - 1] + adding;
+            } catch (Exception e) {
+                System.out.println("Sol: " + Arrays.toString(indices));
+                System.exit(0);
+                index--;
+            }
+            index--;
         }
 
     }
@@ -188,7 +205,7 @@ public class Algorithm
         int i = offset + (position >> 5);
         int shift = (position & 31) << 1;
         long mask = 0b11L << shift;
-        arr[offset + i] = (arr[offset + i] & ~mask) | ((long) value << shift);
+        arr[i] = (arr[i] & ~mask) | ((long) value << shift);
         return true;
     }
     public static void bptlt(int n) {
