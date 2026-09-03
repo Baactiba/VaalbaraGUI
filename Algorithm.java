@@ -4,8 +4,8 @@ public class Algorithm
 {
 
     public static void main (String[] args) {
-//        System.out.println(solve(8, 350, 512, 0.75, 2, 3));
-        System.out.println(solve(9, 700, 512, 0.75, 22, 27));
+        System.out.println(solve(8, 350, 512, 0.75, 16, 17));
+//        System.out.println(solve(9, 700, 512, 0.75, 28, 29));
     }
 
     static int size;
@@ -15,6 +15,7 @@ public class Algorithm
     static int hashSetPower = 0;
     static int hashSetModMap;
     static int solve(int setSize, int maxSum, int cache, double fun_constant, int... set) {
+
         if (!setup) {
             setup = true;
             storageSize = 1 + maxSum / 32;
@@ -40,17 +41,8 @@ public class Algorithm
         indices[index] = set[set.length - 1] + 1;
         maxes[index] = (maxSum - cumSum[index]) / nRem - (nRem / 2);
 
-        int iterations = 0;
-
         out: while (true) {
 
-            iterations++;
-
-            boolean printDebug = false;
-            if (Arrays.equals(indices, new int[] {28, 0}))
-                printDebug = true;
-            printDebug = false;
-//            System.out.println(Arrays.toString(indices) + " " + index + " " + Arrays.toString(maxes) + " " + Arrays.toString(cumSum));
             int ss = index * size;
             int ss2 = index * size + size;
 
@@ -59,7 +51,7 @@ public class Algorithm
                 try {
                     indices[index]++;
                 } catch (Exception e) {
-                    return iterations;
+                    return 0;
                 }
                 continue;
             }
@@ -68,14 +60,19 @@ public class Algorithm
 
             int adding = indices[index];
 
-            set(data, ss2, adding, 0b11);
-
             int next = 32;
+
+            set(data, ss2, adding, 0b11);
 
             for (int i = 2; i <= maxSum; i++) {
 
+                //              if ((i & 31) == 0 && data[ss + (i >>> 5)] == 0) {
+                //                  i |= 31;
+                //                  continue;
+                //              }
+                // TODO mega benchmark this
                 if (i == next) {
-                    if (data[ss + (i >> 5)] == 0) {
+                    if (data[ss + (i >>> 5)] == 0) {
                         i += 31;
                         next += 32;
                         continue;
@@ -83,13 +80,11 @@ public class Algorithm
                     next += 32;
                 }
 
+
                 switch (get(data, ss, i)) {
                     case 0b01: {
                         if (!set(data, ss2, i + adding, 0b01)) {
                             indices[index]++;
-                            if (printDebug)
-                                System.out.printf("Collision: Addition. %d + %d collides with a %d.\n",
-                                        i, adding, get(data, ss2, i + adding));
                             continue out;
                         }
                         break;
@@ -99,48 +94,29 @@ public class Algorithm
                         if (product > maxSum) {
                             if (!add(data, ss2 + storageSize, product)) {
                                 indices[index]++;
-                                if (printDebug)
-                                    System.out.printf("Collision: BigMult. %d * %d is present.\n",
-                                            i, adding);
                                 continue out;
                             }
+                        } else if (!set(data, ss2, (int) product, 0b10)) {
+                            indices[index]++;
+                            continue out;
                         }
-                        else
-                            if (!set(data, ss2, (int) product, 0b10)) {
-                                indices[index]++;
-                                if (printDebug)
-                                    System.out.printf("Collision: SmallMult. %d * %d collides with a %d.\n",
-                                            i, adding, get(data, ss2, i * adding));
-                                continue out;
-                            }
                         break;
                     }
                     case 0b11: {
                         if (!set(data, ss2, i + adding, 0b01)) {
                             indices[index]++;
-                            if (printDebug)
-                                System.out.printf("Collision: Addition. %d + %d collides with a %d.\n",
-                                        i, adding, get(data, ss2, i + adding));
                             continue out;
                         }
                         long product = (long) i * adding;
                         if (product > maxSum) {
                             if (!add(data, ss2 + storageSize, product)) {
                                 indices[index]++;
-                                if (printDebug)
-                                    System.out.printf("Collision: BigMult. %d * %d is present.\n",
-                                            i, adding);
                                 continue out;
                             }
+                        } else if (!set(data, ss2, (int) product, 0b10)) {
+                            indices[index]++;
+                            continue out;
                         }
-                        else
-                            if (!set(data, ss2, (int) product, 0b10)) {
-                                indices[index]++;
-                                if (printDebug)
-                                    System.out.printf("Collision: Addition. %d + %d collides with a %d.\n",
-                                            i, adding, get(data, ss2, i + adding));
-                                continue out;
-                            }
                         break;
                     }
                 }
@@ -151,9 +127,6 @@ public class Algorithm
                     long product = data[i] * adding;
                     if (!add(data, ss2 + storageSize, product)) {
                         indices[index]++;
-                        if (printDebug)
-                            System.out.printf("Collision: HugeMult. %d * %d is present.\n",
-                                    data[i], adding);
                         continue out;
                     }
                 }
@@ -161,7 +134,15 @@ public class Algorithm
             try {
                 indices[++index] = adding + 1;
             } catch (Exception e) {
-                System.out.println("Sol: " + Arrays.toString(indices));
+                ArrayList<Integer> sol = new ArrayList<>();
+                for (int i : set)
+                    sol.add(i);
+                for (int i : indices)
+                    sol.add(i);
+                int sum = 0;
+                for (int i : sol)
+                    sum += i;
+                GUI.results.add(new Result(sol.toString(), sum));
                 indices[--index]++;
                 continue;
             }
@@ -170,9 +151,6 @@ public class Algorithm
             maxes[index] = (maxSum - cumSum[index]) / nRem - (nRem / 2);
         }
     }
-
-
-
 
     static long[] setup(int maxSum, int... set) {
         long[] ret = new long[size];

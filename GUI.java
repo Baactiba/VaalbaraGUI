@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.Timer;
 import javax.swing.text.*;
 import java.awt.*;
 import java.util.*;
@@ -8,32 +9,9 @@ public class GUI implements Runnable
     public static void main(String[] args) throws InterruptedException {
         GUI g;
         SwingUtilities.invokeLater(g = new GUI());
-        Thread.sleep(2500);
         results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
         results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
         results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        results.add(new Result("[33, 41, 43, 44, 45, 49, 65, 131, 262, 524]", 1237));
-        results.add(new Result("[32, 35, 36, 38, 40, 48, 64, 128, 288, 544]", 1253));
-        results.add(new Result("[34, 39, 42, 44, 46, 50, 66, 134, 268, 536]", 1259));
-        SwingUtilities.invokeLater(g::updateResults);
     }
 
 
@@ -87,6 +65,8 @@ public class GUI implements Runnable
             midPanel.removeAll();
             midPanel.revalidate();
             midPanel.repaint();
+            Timer timer = new Timer(1000 / 30, f -> updateResults());
+            timer.start();
         });
         midPanel.add(button);
 
@@ -99,7 +79,7 @@ public class GUI implements Runnable
         frame.setVisible(true);
         setText("User initializing search.");
     }
-    public void updateResults() {
+    public static void updateResults() {
         midPanel.removeAll();
         Collections.sort(results, Comparator.comparingInt(a -> a.score));
         JPanel resultsPanel = new JPanel();
