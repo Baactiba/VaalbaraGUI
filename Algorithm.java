@@ -1,37 +1,66 @@
 import java.util.*;
 
-public class Algorithm
+public class Algorithm implements Runnable
 {
 
     public static void main (String[] args) {
-        System.out.println(solve(8, 350, 512, 0.75, 16, 17));
+//        System.out.println(solve(8, 350, 512, 0.75, 16, 17));
 //        System.out.println(solve(9, 700, 512, 0.75, 28, 29));
     }
 
-    static int size;
-    static int storageSize;
-    static int hashSetSize;
-    static boolean setup = false;
-    static int hashSetPower = 0;
-    static int hashSetModMap;
-    static int solve(int setSize, int maxSum, int cache, double fun_constant, int... set) {
+    int size;
+    int storageSize;
+    int hashSetSize;
+    boolean setup = false;
+    int hashSetPower = 0;
+    int hashSetModMap;
 
+    int setSize;
+    int maxSum;
+    int cache;
+    static double fun_constant = 0.75;
+    ArrayList<int[]> jobs;
+    int completedJobs = 0;
+
+
+    public Algorithm(int setSize, int maxSum, int cache, ArrayList<int[]> jobs) {
+        this.setSize = setSize;
+        this.maxSum = maxSum;
+        this.cache = cache;
+        this.jobs = jobs;
+    }
+
+    public void run() {
+        Collections.shuffle(jobs);
+        for (int[] job : jobs) {
+            solve(setSize, maxSum, cache, fun_constant, job);
+            completedJobs++;
+        }
+    }
+
+    volatile int[] indices;
+    volatile int[] maxes;
+
+    int solve(int setSize, int maxSum, int cache, double fun_constant, int... set) {
         if (!setup) {
             setup = true;
             storageSize = 1 + maxSum / 32;
-            cache *= 1024;
-            cache /= 16;
-            cache = (int) (cache * fun_constant);
-            cache /= (setSize - set.length);
-            bptlt(cache);
+            if (cache < 4)
+                bptlt(cache);
+            else {
+                cache *= 1024;
+                cache /= 16;
+                cache = (int) (cache * fun_constant);
+                cache /= (setSize - set.length);
+            }
             size = storageSize + hashSetSize;
         }
         long[] data = new long[size * (setSize - set.length + 1)];
         long[] start = setup(maxSum, set);
         System.arraycopy(start, 0, data, 0, start.length);
 
-        int[] indices = new int[setSize - set.length];
-        int[] maxes = new int[setSize - set.length];
+        indices = new int[setSize - set.length];
+        maxes = new int[setSize - set.length];
         int[] cumSum = new int[setSize - set.length];
         for (int i : set)
             cumSum[0] += i;
@@ -142,7 +171,9 @@ public class Algorithm
                 int sum = 0;
                 for (int i : sol)
                     sum += i;
-                GUI.results.add(new Result(sol.toString(), sum));
+                synchronized(GUI.synch) {
+                    GUI.results.add(new Result(sol.toString(), sum));
+                }
                 indices[--index]++;
                 continue;
             }
@@ -152,7 +183,7 @@ public class Algorithm
         }
     }
 
-    static long[] setup(int maxSum, int... set) {
+    long[] setup(int maxSum, int... set) {
         long[] ret = new long[size];
         set(ret, 0, set[0], 0b11);
         set(ret, 0, set[1], 0b11);
@@ -201,7 +232,7 @@ public class Algorithm
         }
         return ret;
     }
-    static boolean add(long[] set, int offset, long l) {
+    boolean add(long[] set, int offset, long l) {
         long h = l;
         h ^= h >> 33;
         h *= 0xff51afd7ed558ccdL;
@@ -231,18 +262,23 @@ public class Algorithm
         arr[i] = (arr[i] & ~mask) | ((long) value << shift);
         return true;
     }
-    public static void bptlt(int n) {
-        int i = 1;
-        while (true) {
-            hashSetPower = i;
-            hashSetSize = 1 << (i++ - 1);
-            if (hashSetSize > n) {
-                hashSetSize /= 2;
-                hashSetPower--;
-                hashSetModMap = hashSetSize - 1;
-                return;
+    /*    public void bptlt(int n) {
+            int i = 1;
+            while (true) {
+                hashSetPower = i;
+                hashSetSize = 1 << (i++ - 1);
+                if (hashSetSize > n) {
+                    hashSetSize /= 2;
+                    hashSetPower--;
+                    hashSetModMap = hashSetSize - 1;
+                    return;
+                }
             }
-        }
+        } */
+    public void bptlt(int n) {
+        hashSetPower = setSize + n;
+        hashSetSize = 1 << hashSetPower;
+        hashSetModMap = hashSetSize - 1;
     }
     public static int findByBruteForce(int n) {                 // thx Baeldung for this and the method under
         for (int i = n - 1; i >= 2; i--) {
